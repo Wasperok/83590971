@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Advanced Python IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --header-color: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --button-color: #21262d;
+            --button-hover: #30363d;
+            --button-active: #484f58;
+            --primary-color: #58a6ff;
+            --success-color: #238636;
+            --danger-color: #da3633;
+            --warning-color: #d29922;
+            --info-color: #79c0ff;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        header {
+            background-color: var(--header-color);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+
+        .logo h1 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        button {
+            background-color: var(--button-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            outline: none;
+            user-select: none;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+            border-color: #8b949e;
+        }
+
+        button:active {
+            background-color: var(--button-active);
+            transform: translateY(1px);
+        }
+
+        .btn-run {
+            background-color: var(--success-color);
+            border-color: rgba(240, 246, 252, 0.1);
+            color: white;
+        }
+
+        .btn-run:hover {
+            background-color: #2ea043;
+        }
+
+        .btn-clear {
+            background-color: var(--danger-color);
+            border-color: rgba(240, 246, 252, 0.1);
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background-color: #f85149;
+        }
+
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+
+        .btn-save:hover {
+            background-color: #79c0ff;
+        }
+
+        .btn-settings {
+            background-color: var(--warning-color);
+            color: white;
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+
+        .btn-settings:hover {
+            background-color: #e3b341;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .editor-header {
+            padding: 6px 12px;
+            background-color: var(--header-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .editor-title {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: var(--font-mono);
+        }
+
+        .panel-container {
+            width: 40%;
+            min-width: 300px;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            transition: all 0.3s ease;
+        }
+
+        .panel-container.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .panel-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            user-select: none;
+        }
+
+        .panel-tab.active {
+            font-weight: 600;
+        }
+
+        .panel-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #f78166;
+        }
+
+        .panel-tab .badge {
+            background-color: var(--button-color);
+            border-radius: 10px;
+            padding: 0 5px;
+            font-size: 10px;
+            font-weight: normal;
+        }
+
+        .panel-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .output-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .terminal-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .problems-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .problem-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .problem-item.error {
+            color: #f85149;
+        }
+
+        .problem-item.warning {
+            color: #d29922;
+        }
+
+        .problem-item.info {
+            color: #79c0ff;
+        }
+
+        .problem-icon {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .problem-message {
+            flex: 1;
+        }
+
+        .problem-location {
+            color: #8b949e;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .status-bar {
+            padding: 6px 12px;
+            background-color: var(--header-color);
+            border-top: 1px solid var(--border-color);
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-item .icon {
+            font-size: 10px;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: var(--header-color);
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .dropdown-left .dropdown-content {
+            right: auto;
+            left: 0;
+        }
+
+        .dropdown-content a {
+            color: var(--text-color);
+            padding: 6px 12px;
+            text-decoration: none;
+            display: block;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+            font-size: 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .tab.active {
+            background-color: var(--bg-color);
+            font-weight: 600;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #f78166;
+        }
+
+        .tab .close-icon {
+            opacity: 0.6;
+            font-size: 10px;
+        }
+
+        .tab .close-icon:hover {
+            opacity: 1;
+            color: var(--text-color);
+        }
+
+        .tab .unsaved-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+
+        .snippets {
+            padding: 6px 0;
+        }
+
+        .snippet {
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .snippet:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .resize-handle {
+            width: 5px;
+            background-color: var(--border-color);
+            cursor: col-resize;
+            flex-shrink: 0;
+        }
+
+        .resize-handle:hover {
+            background-color: var(--primary-color);
+        }
+
+        .toggle-panel {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--header-color);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+            padding: 8px 4px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-panel:hover {
+            background-color: var(--button-hover);
+        }
+
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .settings-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .settings-content {
+            background-color: var(--header-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .settings-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .settings-close {
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+        }
+
+        .settings-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .settings-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .settings-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-option-label {
+            font-size: 12px;
+        }
+
+        .settings-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            background-color: var(--button-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background-color: var(--button-color);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-container input[type="checkbox"]:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 10px;
+        }
+
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .theme-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .theme-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .theme-option.active {
+            border-color: white;
+        }
+
+        .theme-dark {
+            background-color: #0d1117;
+        }
+
+        .theme-dracula {
+            background-color: #282a36;
+        }
+
+        .theme-monokai {
+            background-color: #272822;
+        }
+
+        .theme-solarized {
+            background-color: #002b36;
+        }
+
+        .notifications {
+            position: fixed;
+            bottom: 40px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .notification {
+            background-color: var(--header-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .notification.error {
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .notification.warning {
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .notification.info {
+            border-left: 3px solid var(--info-color);
+        }
+
+        .notification-close {
+            margin-left: auto;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
+        }
+
+        .context-menu {
+            position: absolute;
+            background-color: var(--header-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 160px;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fab fa-python"></i>
+            <h1>Advanced Python IDE</h1>
+        </div>
+        <div class="controls">
+            <button class="btn-save" id="saveBtn">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <div class="dropdown">
+                <button id="fileMenuBtn">
+                    <i class="fas fa-file"></i> File
+                </button>
+                <div class="dropdown-content">
+                    <a href="#" id="newFileBtn"><i class="fas fa-file"></i> New File</a>
+                    <a href="#" id="openFileBtn"><i class="fas fa-folder-open"></i> Open File</a>
+                    <a href="#" id="saveAsBtn"><i class="fas fa-save"></i> Save As</a>
+                    <div class="context-menu-separator"></div>
+                    <a href="#" id="importBtn"><i class="fas fa-file-import"></i> Import</a>
+                    <a href="#" id="exportBtn"><i class="fas fa-file-export"></i> Export</a>
+                    <div class="context-menu-separator"></div>
+                    <a href="#" id="settingsBtn"><i class="fas fa-cog"></i> Settings</a>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button id="editMenuBtn">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <div class="dropdown-content">
+                    <a href="#" id="undoBtn"><i class="fas fa-undo"></i> Undo</a>
+                    <a href="#" id="redoBtn"><i class="fas fa-redo"></i> Redo</a>
+                    <div class="context-menu-separator"></div>
+                    <a href="#" id="cutBtn"><i class="fas fa-cut"></i> Cut</a>
+                    <a href="#" id="copyBtn"><i class="fas fa-copy"></i> Copy</a>
+                    <a href="#" id="pasteBtn"><i class="fas fa-paste"></i> Paste</a>
+                    <div class="context-menu-separator"></div>
+                    <a href="#" id="findBtn"><i class="fas fa-search"></i> Find</a>
+                    <a href="#" id="replaceBtn"><i class="fas fa-exchange-alt"></i> Replace</a>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button id="viewMenuBtn">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <div class="dropdown-content">
+                    <a href="#" id="zoomInBtn"><i class="fas fa-search-plus"></i> Zoom In</a>
+                    <a href="#" id="zoomOutBtn"><i class="fas fa-search-minus"></i> Zoom Out</a>
+                    <a href="#" id="resetZoomBtn"><i class="fas fa-search"></i> Reset Zoom</a>
+                    <div class="context-menu-separator"></div>
+                    <a href="#" id="toggleSidebarBtn"><i class="fas fa-columns"></i> Toggle Sidebar</a>
+                    <a href="#" id="fullscreenBtn"><i class="fas fa-expand"></i> Fullscreen</a>
+                </div>
+            </div>
+            <button class="btn-run" id="runBtn">
+                <i class="fas fa-play"></i> Run
+            </button>
+            <button class="btn-settings" id="settingsBtnMain">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="editor-container">
+            <div class="tabs" id="editorTabs">
+                <div class="tab active" data-file="main.py">
+                    <i class="fab fa-python"></i>
+                    <span>main.py</span>
+                    <div class="unsaved-icon"></div>
+                    <i class="fas fa-times close-icon"></i>
+                </div>
+                <div class="tab" data-file="utils.py">
+                    <i class="fab fa-python"></i>
+                    <span>utils.py</span>
+                    <i class="fas fa-times close-icon"></i>
+                </div>
+            </div>
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="fab fa-python"></i>
+                    <span id="currentFilename">main.py</span>
+                </div>
+                <div class="editor-actions">
+                    <div class="dropdown">
+                        <button id="snippetsBtn">
+                            <i class="fas fa-code"></i> Snippets
+                        </button>
+                        <div class="dropdown-content snippets">
+                            <div class="snippet" data-snippet="for"><i class="fas fa-redo"></i> For Loop</div>
+                            <div class="snippet" data-snippet="function"><i class="fas fa-function"></i> Function</div>
+                            <div class="snippet" data-snippet="class"><i class="fas fa-cube"></i> Class</div>
+                            <div class="snippet" data-snippet="if"><i class="fas fa-code-branch"></i> If-Else</div>
+                            <div class="snippet" data-snippet="try"><i class="fas fa-exclamation-triangle"></i> Try-Except</div>
+                            <div class="snippet" data-snippet="listcomp"><i class="fas fa-list"></i> List Comprehension</div>
+                        </div>
+                    </div>
+                    <button id="formatBtn">
+                        <i class="fas fa-indent"></i> Format
+                    </button>
+                    <button id="debugBtn">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
+                </div>
+            </div>
+            <textarea id="editor"># Advanced Python IDE
+# Try writing some Python code here
+
+def greet(name):
+    """A simple greeting function"""
+    return f"Hello, {name}!"
+
+print(greet("World"))
+
+# Calculate factorial
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+print(f"Factorial of 5 is {factorial(5)}")
+
+# Fibonacci sequence
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        print(a, end=' ')
+        a, b = b, a + b
+
+print("Fibonacci sequence:")
+fibonacci(10)</textarea>
+        </div>
+
+        <div class="resize-handle" id="resizeHandle"></div>
+
+        <div class="panel-container" id="panelContainer">
+            <div class="panel-tabs">
+                <div class="panel-tab active" data-panel="output">
+                    <i class="fas fa-terminal"></i>
+                    <span>Output</span>
+                    <span class="badge" id="outputBadge">0</span>
+                </div>
+                <div class="panel-tab" data-panel="terminal">
+                    <i class="fas fa-terminal"></i>
+                    <span>Terminal</span>
+                </div>
+                <div class="panel-tab" data-panel="problems">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Problems</span>
+                    <span class="badge" id="problemsBadge">3</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="output-content" id="output" data-panel-content="output"></div>
+                <div class="terminal-content" id="terminal" data-panel-content="terminal" style="display: none;"></div>
+                <div class="problems-content" id="problems" data-panel-content="problems" style="display: none;">
+                    <div class="problem-item error">
+                        <div class="problem-icon"><i class="fas fa-times-circle"></i></div>
+                        <div class="problem-message">
+                            <div>SyntaxError: invalid syntax</div>
+                            <div class="problem-location">main.py, line 15</div>
+                        </div>
+                    </div>
+                    <div class="problem-item warning">
+                        <div class="problem-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="problem-message">
+                            <div>Unused variable 'result'</div>
+                            <div class="problem-location">utils.py, line 8</div>
+                        </div>
+                    </div>
+                    <div class="problem-item info">
+                        <div class="problem-icon"><i class="fas fa-info-circle"></i></div>
+                        <div class="problem-message">
+                            <div>Function 'greet' is too complex (cyclomatic complexity > 5)</div>
+                            <div class="problem-location">main.py, line 3</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toggle-panel" id="togglePanelBtn">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <i class="fas fa-circle icon" style="color: var(--success-color);"></i>
+            <span id="pythonVersion">Python 3.9.7</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-code-branch icon"></i>
+            <span id="gitBranch">main</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-memory icon"></i>
+            <span id="systemStatus">CPU: 12.5% | Memory: 256MB</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-code icon"></i>
+            <span id="cursorPosition">Ln 1, Col 1</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-keyboard icon"></i>
+            <span id="indentationMode">Spaces: 4</span>
+        </div>
+    </div>
+
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <div class="settings-title">
+                    <i class="fas fa-cog"></i> Settings
+                </div>
+                <div class="settings-close" id="settingsCloseBtn">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="settings-body">
+                <div class="settings-group">
+                    <div class="settings-group-title">
+                        <i class="fas fa-code"></i> Editor Settings
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Font Size</div>
+                        <input type="number" id="fontSizeInput" min="10" max="24" value="13">
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Tab Size</div>
+                        <input type="number" id="tabSizeInput" min="2" max="8" value="4">
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Line Numbers</div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="lineNumbersCheckbox" checked>
+                            <label for="lineNumbersCheckbox">Show line numbers</label>
+                        </div>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Word Wrap</div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="wordWrapCheckbox">
+                            <label for="wordWrapCheckbox">Enable word wrap</label>
+                        </div>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Auto Close Brackets</div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="autoCloseBracketsCheckbox" checked>
+                            <label for="autoCloseBracketsCheckbox">Enable auto closing brackets</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title">
+                        <i class="fas fa-palette"></i> Theme Settings
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Editor Theme</div>
+                        <select id="themeSelect">
+                            <option value="dracula">Dracula</option>
+                            <option value="default">Default</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="solarized">Solarized</option>
+                        </select>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Color Scheme</div>
+                        <div class="theme-selector">
+                            <div class="theme-option theme-dark active" data-theme="dark"></div>
+                            <div class="theme-option theme-dracula" data-theme="dracula"></div>
+                            <div class="theme-option theme-monokai" data-theme="monokai"></div>
+                            <div class="theme-option theme-solarized" data-theme="solarized"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title">
+                        <i class="fas fa-terminal"></i> Execution Settings
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Python Version</div>
+                        <select id="pythonVersionSelect">
+                            <option value="3.9">Python 3.9</option>
+                            <option value="3.8">Python 3.8</option>
+                            <option value="3.7">Python 3.7</option>
+                        </select>
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Execution Timeout</div>
+                        <input type="number" id="timeoutInput" min="1" max="60" value="10"> seconds
+                    </div>
+                    <div class="settings-option">
+                        <div class="settings-option-label">Clear Output on Run</div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="clearOutputCheckbox" checked>
+                            <label for="clearOutputCheckbox">Clear output before each run</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button id="settingsCancelBtn">Cancel</button>
+                <button class="btn-save" id="settingsSaveBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notifications" id="notifications"></div>
+
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" id="contextUndo"><i class="fas fa-undo"></i> Undo</div>
+        <div class="context-menu-item" id="contextRedo"><i class="fas fa-redo"></i> Redo</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" id="contextCut"><i class="fas fa-cut"></i> Cut</div>
+        <div class="context-menu-item" id="contextCopy"><i class="fas fa-copy"></i> Copy</div>
+        <div class="context-menu-item" id="contextPaste"><i class="fas fa-paste"></i> Paste</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" id="contextRun"><i class="fas fa-play"></i> Run</div>
+        <div class="context-menu-item" id="contextFormat"><i class="fas fa-indent"></i> Format</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/display/autorefresh.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+    <script>
+        // Инициализация редактора CodeMirror
+        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'python',
+            theme: 'dracula',
+            lineNumbers: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: false,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            styleActiveLine: true,
+            extraKeys: {
+                'Ctrl-Enter': runCode,
+                'Shift-Enter': runCode,
+                'Ctrl-/': 'toggleComment',
+                'Cmd-/': 'toggleComment',
+                'Ctrl-F': 'findPersistent',
+                'Ctrl-H': 'replace',
+                'Ctrl-G': 'findNext',
+                'Shift-Ctrl-G': 'findPrev',
+                'Shift-Ctrl-F': 'replaceAll',
+                'Shift-Ctrl-R': 'replaceAll',
+                'F11': toggleFullscreen,
+                'Esc': 'closeAll',
+                'Ctrl-S': saveCode,
+                'Ctrl-D': debugCode
+            },
+            autorefresh: true
+        });
+
+        // Состояние приложения
+        const state = {
+            files: {
+                'main.py': {
+                    content: editor.getValue(),
+                    unsaved: true
+                },
+                'utils.py': {
+                    content: '# Utility functions\n\ndef add(a, b):\n    return a + b',
+                    unsaved: false
+                }
+            },
+            currentFile: 'main.py',
+            settings: {
+                fontSize: 13,
+                tabSize: 4,
+                lineNumbers: true,
+                wordWrap: false,
+                autoCloseBrackets: true,
+                theme: 'dracula',
+                colorScheme: 'dark',
+                pythonVersion: '3.9',
+                timeout: 10,
+                clearOutput: true,
+                panelVisible: true,
+                panelWidth: 40
+            },
+            output: [],
+            problems: [
+                { type: 'error', message: 'SyntaxError: invalid syntax', file: 'main.py', line: 15 },
+                { type: 'warning', message: 'Unused variable \'result\'', file: 'utils.py', line: 8 },
+                { type: 'info', message: 'Function \'greet\' is too complex (cyclomatic complexity > 5)', file: 'main.py', line: 3 }
+            ]
+        };
+
+        // Элементы DOM
+        const runBtn = document.getElementById('runBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const formatBtn = document.getElementById('formatBtn');
+        const debugBtn = document.getElementById('debugBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const outputEl = document.getElementById('output');
+        const terminalEl = document.getElementById('terminal');
+        const problemsEl = document.getElementById('problems');
+        const editorTabs = document.getElementById('editorTabs');
+        const panelContainer = document.getElementById('panelContainer');
+        const togglePanelBtn = document.getElementById('togglePanelBtn');
+        const resizeHandle = document.getElementById('resizeHandle');
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsBtnMain = document.getElementById('settingsBtnMain');
+        const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+        const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+        const settingsCancelBtn = document.getElementById('settingsCancelBtn');
+        const notifications = document.getElementById('notifications');
+        const contextMenu = document.getElementById('contextMenu');
+        const currentFilename = document.getElementById('currentFilename');
+        const outputBadge = document.getElementById('outputBadge');
+        const problemsBadge = document.getElementById('problemsBadge');
+        const cursorPosition = document.getElementById('cursorPosition');
+        const pythonVersion = document.getElementById('pythonVersion');
+        const gitBranch = document.getElementById('gitBranch');
+        const systemStatus = document.getElementById('systemStatus');
+        const indentationMode = document.getElementById('indentationMode');
+
+        // Инициализация приложения
+        function initApp() {
+            // Загрузка настроек из localStorage
+            const savedSettings = localStorage.getItem('pythonIdeSettings');
+            if (savedSettings) {
+                Object.assign(state.settings, JSON.parse(savedSettings));
+                applySettings();
+            }
+
+            // Обновление интерфейса
+            updateUI();
+            updateProblemsBadge();
+            updateSystemStatus();
+
+            // Инициализация панели
+            if (!state.settings.panelVisible) {
+                togglePanel();
+            } else {
+                panelContainer.style.width = `${state.settings.panelWidth}%`;
+            }
+
+            // Установка обработчиков событий
+            setupEventListeners();
+        }
+
+        // Установка обработчиков событий
+        function setupEventListeners() {
+            // Кнопки действий
+            runBtn.addEventListener('click', runCode);
+            saveBtn.addEventListener('click', saveCode);
+            formatBtn.addEventListener('click', formatCode);
+            debugBtn.addEventListener('click', debugCode);
+            settingsBtnMain.addEventListener('click', openSettings);
+            settingsCloseBtn.addEventListener('click', closeSettings);
+            settingsSaveBtn.addEventListener('click', saveSettings);
+            settingsCancelBtn.addEventListener('click', closeSettings);
+
+            // Переключение панели
+            togglePanelBtn.addEventListener('click', togglePanel);
+
+            // Переключение вкладок панели
+            document.querySelectorAll('.panel-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchPanelTab(tab.dataset.panel));
+            });
+
+            // Переключение вкладок редактора
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('close-icon')) {
+                        closeTab(tab.dataset.file);
+                    } else {
+                        switchTab(tab.dataset.file);
+                    }
+                });
+            });
+
+            // Добавление новой вкладки
+            document.querySelector('.tab .fa-plus')?.parentElement.addEventListener('click', addNewTab);
+
+            // Сниппеты кода
+            document.querySelectorAll('.snippet').forEach(snippet => {
+                snippet.addEventListener('click', () => insertSnippet(snippet.dataset.snippet));
+            });
+
+            // Изменение размера панели
+            let isResizing = false;
+            resizeHandle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const containerWidth = document.querySelector('.main-container').offsetWidth;
+                const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+                const minWidth = 20;
+                const maxWidth = 60;
+                
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                    panelContainer.style.width = `${newWidth}%`;
+                    state.settings.panelWidth = newWidth;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                }
+            });
+
+            // Контекстное меню
+            editor.getWrapperElement().addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('click', () => {
+                contextMenu.style.display = 'none';
+            });
+
+            // Обработчики контекстного меню
+            document.getElementById('contextUndo').addEventListener('click', () => editor.undo());
+            document.getElementById('contextRedo').addEventListener('click', () => editor.redo());
+            document.getElementById('contextCut').addEventListener('click', () => {
+                const selectedText = editor.getSelection();
+                navigator.clipboard.writeText(selectedText);
+                editor.replaceSelection('');
+            });
+            document.getElementById('contextCopy').addEventListener('click', () => {
+                const selectedText = editor.getSelection();
+                navigator.clipboard.writeText(selectedText);
+            });
+            document.getElementById('contextPaste').addEventListener('click', () => {
+                navigator.clipboard.readText().then(text => {
+                    editor.replaceSelection(text);
+                });
+            });
+            document.getElementById('contextRun').addEventListener('click', runCode);
+            document.getElementById('contextFormat').addEventListener('click', formatCode);
+
+            // Отслеживание позиции курсора
+            editor.on('cursorActivity', updateCursorPosition);
+
+            // Отслеживание изменений в редакторе
+            editor.on('change', () => {
+                state.files[state.currentFile].content = editor.getValue();
+                state.files[state.currentFile].unsaved = true;
+                updateTabState(state.currentFile);
+            });
+
+            // Обновление системного статуса каждые 5 секунд
+            setInterval(updateSystemStatus, 5000);
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            // Обновление вкладок
+            editorTabs.innerHTML = '';
+            Object.keys(state.files).forEach(filename => {
+                const tab = document.createElement('div');
+                tab.className = `tab ${filename === state.currentFile ? 'active' : ''}`;
+                tab.dataset.file = filename;
+                
+                tab.innerHTML = `
+                    <i class="fab fa-python"></i>
+                    <span>${filename}</span>
+                    ${state.files[filename].unsaved ? '<div class="unsaved-icon"></div>' : ''}
+                    <i class="fas fa-times close-icon"></i>
+                `;
+                
+                editorTabs.appendChild(tab);
+            });
+
+            // Добавление кнопки новой вкладки
+            const addTab = document.createElement('div');
+            addTab.className = 'tab';
+            addTab.innerHTML = '<i class="fas fa-plus"></i>';
+            editorTabs.appendChild(addTab);
+
+            // Обновление текущего файла
+            currentFilename.textContent = state.currentFile;
+            editor.setValue(state.files[state.currentFile].content);
+
+            // Применение настроек редактора
+            editor.setOption('lineNumbers', state.settings.lineNumbers);
+            editor.setOption('lineWrapping', state.settings.wordWrap);
+            editor.setOption('tabSize', state.settings.tabSize);
+            editor.setOption('theme', state.settings.theme);
+            editor.refresh();
+
+            // Обновление статус-бара
+            indentationMode.textContent = `Spaces: ${state.settings.tabSize}`;
+            pythonVersion.textContent = `Python ${state.settings.pythonVersion}`;
+        }
+
+        // Переключение вкладки
+        function switchTab(filename) {
+            if (state.currentFile === filename) return;
+            
+            // Сохраняем текущее содержимое
+            state.files[state.currentFile].content = editor.getValue();
+            
+            // Переключаемся на новую вкладку
+            state.currentFile = filename;
+            editor.setValue(state.files[filename].content);
+            
+            // Обновляем UI
+            updateUI();
+        }
+
+        // Закрытие вкладки
+        function closeTab(filename) {
+            if (Object.keys(state.files).length <= 1) {
+                showNotification('error', 'Cannot close the last tab');
+                return;
+            }
+
+            if (state.files[filename].unsaved) {
+                if (!confirm(`File ${filename} has unsaved changes. Close anyway?`)) {
+                    return;
+                }
+            }
+
+            delete state.files[filename];
+            
+            // Переключаемся на первую доступную вкладку
+            state.currentFile = Object.keys(state.files)[0];
+            updateUI();
+        }
+
+        // Добавление новой вкладки
+        function addNewTab() {
+            const filename = prompt('Enter filename (e.g. script.py):', 'script.py');
+            if (!filename) return;
+            
+            if (state.files[filename]) {
+                showNotification('error', `File ${filename} already exists`);
+                return;
+            }
+            
+            state.files[filename] = {
+                content: '# New Python file\n',
+                unsaved: true
+            };
+            
+            state.currentFile = filename;
+            updateUI();
+        }
+
+        // Обновление состояния вкладки
+        function updateTabState(filename) {
+            const tab = document.querySelector(`.tab[data-file="${filename}"]`);
+            if (!tab) return;
+            
+            const unsavedIcon = tab.querySelector('.unsaved-icon');
+            if (state.files[filename].unsaved) {
+                if (!unsavedIcon) {
+                    const icon = document.createElement('div');
+                    icon.className = 'unsaved-icon';
+                    tab.insertBefore(icon, tab.querySelector('.close-icon'));
+                }
+            } else if (unsavedIcon) {
+                unsavedIcon.remove();
+            }
+        }
+
+        // Переключение панели
+        function togglePanel() {
+            state.settings.panelVisible = !state.settings.panelVisible;
+            
+            if (state.settings.panelVisible) {
+                panelContainer.classList.remove('collapsed');
+                togglePanelBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                panelContainer.style.width = `${state.settings.panelWidth}%`;
+            } else {
+                panelContainer.classList.add('collapsed');
+                togglePanelBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            }
+        }
+
+        // Переключение вкладки панели
+        function switchPanelTab(panelName) {
+            document.querySelectorAll('.panel-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.panel === panelName);
+            });
+            
+            document.querySelectorAll('[data-panel-content]').forEach(content => {
+                content.style.display = content.dataset.panelContent === panelName ? 'block' : 'none';
+            });
+        }
+
+        // Запуск кода
+        function runCode() {
+            if (state.settings.clearOutput) {
+                outputEl.innerHTML = '';
+                terminalEl.innerHTML = '';
+            }
+            
+            const code = editor.getValue();
+            
+            // Используем Skulpt для выполнения Python в браузере
+            Sk.configure({
+                output: (text) => {
+                    outputEl.innerHTML += text;
+                    outputEl.scrollTop = outputEl.scrollHeight;
+                    updateOutputBadge();
+                },
+                read: (x) => {
+                    if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+                        throw "File not found: '" + x + "'";
+                    return Sk.builtinFiles["files"][x];
+                },
+                inputfun: (prompt) => {
+                    return window.prompt(prompt);
+                },
+                inputfunTakesPrompt: true,
+                __future__: Sk.python3
+            });
+
+            Sk.pre = "output";
+            
+            try {
+                Sk.importMainWithBody("<stdin>", false, code, true);
+                showNotification('success', 'Code executed successfully');
+            } catch (e) {
+                terminalEl.innerHTML = e.toString();
+                terminalEl.style.color = '#f85149';
+                showNotification('error', 'Execution error: ' + e.toString().split('\n')[0]);
+            }
+            
+            switchPanelTab('output');
+        }
+
+        // Форматирование кода
+        function formatCode() {
+            // В реальном приложении можно использовать более сложную логику форматирования
+            const code = editor.getValue();
+            const lines = code.split('\n');
+            let formatted = [];
+            let indent = 0;
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line.endsWith(':')) {
+                    formatted.push(' '.repeat(indent * state.settings.tabSize) + line);
+                    indent++;
+                } else if (line.startsWith('return') || line.startsWith('pass') || 
+                           line.startsWith('break') || line.startsWith('continue') ||
+                           line.startsWith('raise') || line.startsWith('yield')) {
+                    indent--;
+                    formatted.push(' '.repeat(indent * state.settings.tabSize) + line);
+                } else if (line.startsWith('except') || line.startsWith('else') || 
+                          line.startsWith('elif') || line.startsWith('finally')) {
+                    indent--;
+                    formatted.push(' '.repeat(indent * state.settings.tabSize) + line);
+                } else {
+                    formatted.push(' '.repeat(indent * state.settings.tabSize) + line);
+                }
+            }
+            
+            editor.setValue(formatted.join('\n'));
+            showNotification('success', 'Code formatted');
+        }
+
+        // Отладка кода
+        function debugCode() {
+            showNotification('info', 'Debugging started. Add breakpoints by clicking on line numbers.');
+            // В реальном приложении можно добавить функционал отладки
+        }
+
+        // Сохранение кода
+        function saveCode() {
+            const filename = state.currentFile;
+            const code = editor.getValue();
+            
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            state.files[filename].unsaved = false;
+            updateTabState(filename);
+            showNotification('success', `File ${filename} saved successfully`);
+        }
+
+        // Открытие настроек
+        function openSettings() {
+            // Заполняем форму текущими настройками
+            document.getElementById('fontSizeInput').value = state.settings.fontSize;
+            document.getElementById('tabSizeInput').value = state.settings.tabSize;
+            document.getElementById('lineNumbersCheckbox').checked = state.settings.lineNumbers;
+            document.getElementById('wordWrapCheckbox').checked = state.settings.wordWrap;
+            document.getElementById('autoCloseBracketsCheckbox').checked = state.settings.autoCloseBrackets;
+            document.getElementById('themeSelect').value = state.settings.theme;
+            document.getElementById('pythonVersionSelect').value = state.settings.pythonVersion;
+            document.getElementById('timeoutInput').value = state.settings.timeout;
+            document.getElementById('clearOutputCheckbox').checked = state.settings.clearOutput;
+            
+            // Выбираем текущую цветовую схему
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.theme === state.settings.colorScheme);
+            });
+            
+            settingsModal.classList.add('active');
+        }
+
+        // Закрытие настроек
+        function closeSettings() {
+            settingsModal.classList.remove('active');
+        }
+
+        // Сохранение настроек
+        function saveSettings() {
+            // Получаем новые настройки из формы
+            state.settings.fontSize = parseInt(document.getElementById('fontSizeInput').value);
+            state.settings.tabSize = parseInt(document.getElementById('tabSizeInput').value);
+            state.settings.lineNumbers = document.getElementById('lineNumbersCheckbox').checked;
+            state.settings.wordWrap = document.getElementById('wordWrapCheckbox').checked;
+            state.settings.autoCloseBrackets = document.getElementById('autoCloseBracketsCheckbox').checked;
+            state.settings.theme = document.getElementById('themeSelect').value;
+            state.settings.pythonVersion = document.getElementById('pythonVersionSelect').value;
+            state.settings.timeout = parseInt(document.getElementById('timeoutInput').value);
+            state.settings.clearOutput = document.getElementById('clearOutputCheckbox').checked;
+            
+            // Применяем настройки
+            applySettings();
+            
+            // Сохраняем в localStorage
+            localStorage.setItem('pythonIdeSettings', JSON.stringify(state.settings));
+            
+            closeSettings();
+            showNotification('success', 'Settings saved successfully');
+        }
+
+        // Применение настроек
+        function applySettings() {
+            // Настройки редактора
+            editor.setOption('lineNumbers', state.settings.lineNumbers);
+            editor.setOption('lineWrapping', state.settings.wordWrap);
+            editor.setOption('tabSize', state.settings.tabSize);
+            editor.setOption('theme', state.settings.theme);
+            
+            // Размер шрифта
+            document.querySelectorAll('.CodeMirror').forEach(cm => {
+                cm.style.fontSize = `${state.settings.fontSize}px`;
+            });
+            
+            // Цветовая схема
+            document.documentElement.style.setProperty('--bg-color', state.settings.colorScheme === 'dark' ? '#0d1117' : 
+                                                                    state.settings.colorScheme === 'dracula' ? '#282a36' :
+                                                                    state.settings.colorScheme === 'monokai' ? '#272822' : '#002b36');
+            
+            // Обновляем UI
+            updateUI();
+        }
+
+        // Показ контекстного меню
+        function showContextMenu(x, y) {
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${x}px`;
+            contextMenu.style.top = `${y}px`;
+        }
+
+        // Показ уведомления
+        function showNotification(type, message) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                   type === 'error' ? 'times-circle' : 
+                                   type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+                <i class="fas fa-times notification-close"></i>
+            `;
+            
+            notifications.appendChild(notification);
+            
+            // Показываем уведомление
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Закрытие по кнопке
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+            
+            // Автоматическое закрытие
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 5000);
+        }
+
+        // Вставка сниппета
+        function insertSnippet(type) {
+            let snippet = '';
+            
+            switch(type) {
+                case 'for':
+                    snippet = 'for item in collection:\n    # Loop body\n    pass';
+                    break;
+                case 'function':
+                    snippet = 'def function_name(arg1, arg2):\n    """Docstring"""\n    # Function body\n    return result';
+                    break;
+                case 'class':
+                    snippet = 'class ClassName:\n    """Class docstring"""\n    \n    def __init__(self, arg):\n        self.arg = arg\n    \n    def method(self):\n        """Method docstring"""\n        return self.arg';
+                    break;
+                case 'if':
+                    snippet = 'if condition:\n    # If block\nelif another_condition:\n    # Elif block\nelse:\n    # Else block';
+                    break;
+                case 'try':
+                    snippet = 'try:\n    # Code that might raise an exception\nexcept Exception as e:\n    # Handle exception\n    print(f"An error occurred: {e}")\nelse:\n    # Code to run if no exception was raised\nfinally:\n    # Cleanup code that always runs';
+                    break;
+                case 'listcomp':
+                    snippet = '[expression for item in iterable if condition]';
+                    break;
+            }
+            
+            editor.replaceSelection(snippet);
+            showNotification('info', `Inserted ${type} snippet`);
+        }
+
+        // Обновление позиции курсора
+        function updateCursorPosition() {
+            const cursor = editor.getCursor();
+            cursorPosition.textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+        }
+
+        // Обновление бейджа вывода
+        function updateOutputBadge() {
+            const lines = outputEl.textContent.split('\n').filter(line => line.trim() !== '');
+            outputBadge.textContent = lines.length;
+        }
+
+        // Обновление бейджа проблем
+        function updateProblemsBadge() {
+            problemsBadge.textContent = state.problems.length;
+        }
+
+        // Обновление системного статуса
+        function updateSystemStatus() {
+            // В реальном приложении можно получать реальные данные о системе
+            const cpu = (Math.random() * 20 + 5).toFixed(1);
+            const memory = (Math.random() * 100 + 200).toFixed(0);
+            systemStatus.textContent = `CPU: ${cpu}% | Memory: ${memory}MB`;
+        }
+
+        // Переключение полноэкранного режима
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showNotification('error', `Fullscreen error: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Инициализация приложения
+        initApp();
+    </script>
+</body>
+</html>
